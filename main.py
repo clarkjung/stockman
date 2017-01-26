@@ -1,6 +1,4 @@
-import csv
-f = open('data/nyse_list.csv', 'rb')
-reader = csv.reader(f)
-for row in reader:
-    print row[0]
-f.close()
+from request_manager import RequestManager
+
+request_manager = RequestManager()
+request_manager.set_stock_symbols()
