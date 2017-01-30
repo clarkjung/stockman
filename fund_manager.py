@@ -107,4 +107,17 @@ class FundManager(object):
 
 
 
-		
+
+
+
+	
+
+	def run_analysis(self, symbol = None):
+		if symbol == None:
+			for symbol in self.symbols:
+				self.run_analysis(symbol)
+		else:
+			print symbol
+
+	def reset_hiashi_heikinashi_data_tuple_list()
+		self.hiashi_heikinashi_data_tuple_list = []
