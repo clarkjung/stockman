@@ -1,3 +1,5 @@
+import datetime
+
 class Order(object):
 
 	def __init__(self, stock, hoyusu, konyu_nichiji, konyu_gaku):
@@ -10,7 +12,7 @@ class Order(object):
 		self.baikyaku_gaku = None
 		self.rieki = None
 
-	def baikyaku(self, baikyaku_nichiji, baikyaku_gaku):
-		self.baikyaku_nichiji = baikyaku_nichiji
-		self.baikyaku_gaku = baikyaku_gaku
+	def baikyaku(self):
+		self.baikyaku_nichiji = datetime.datetime.now()
+		self.baikyaku_gaku = self.stock.price * self.hoyusu
 		self.rieki = baikyaku_gaku - konyu_gaku
