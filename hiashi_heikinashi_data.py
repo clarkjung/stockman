@@ -1,3 +1,4 @@
+from heikinashi_type import HeikinashiType
 class HiashiHeikinashiData(object):
 
 	"""
@@ -13,8 +14,15 @@ class HiashiHeikinashiData(object):
 
 		if is_first_data:
 			self.open = (previous_hiashi_heikinashi_data.open + previous_hiashi_heikinashi_data.close + previous_hiashi_heikinashi_data.high + previous_hiashi_heikinashi_data.low)/4
+			self.type = HeikinashiType.NONE
 		else:
 			self.open = (previous_hiashi_heikinashi_data.open + previous_hiashi_heikinashi_data.close)/2
+			if self.close > self.open:
+				self.type = HeikinashiType.YOUSEN
+			elif self.open > self.close:
+				self.type = HeikinashiType.INSEN
+			else:
+				self.type = HeikinashiType.NONE
 			
 	def print_out(self):
-		print(self.date + ", open: " + self.open + ", close: " + self.close + ", high: " + self.high + ", low: " + self.low)
+		print(self.date + ", type: " + self.type + ", open: " + self.open + ", close: " + self.close + ", high: " + self.high + ", low: " + self.low)
