@@ -1,4 +1,6 @@
 import csv
+import pdb
+import urllib2
 from hiashi_normal_data import HiashiNormalData
 import matplotlib.pyplot as plt
 from matplotlib.dates import DateFormatter, WeekdayLocator,\
@@ -7,7 +9,7 @@ from matplotlib.finance import quotes_historical_yahoo_ohlc, candlestick_ohlc
 from hiashi_normal_data import HiashiNormalData
 from hiashi_heikinashi_data import HiashiHeikinashiData
 
-class RequestManager(object):
+class FundManager(object):
 
 	def __init__(self):
 		self.symbols = []
@@ -23,8 +25,18 @@ class RequestManager(object):
 
 	# example date format = (2004, 4, 12)
 	def retrieve_hiashi_normal_data(self, symbol, from_date, to_date):
-		# each quote tuple represents (date, open, close, high, low, volume)
-		quotes = quotes_historical_yahoo_ohlc(symbol, from_date, to_date)
+
+		try:
+			# each quote tuple represents (date, open, close, high, low, volume)
+			quotes = quotes_historical_yahoo_ohlc(symbol, from_date, to_date)
+
+		except urllib2.HTTPError as err:
+			if err.code == 404:
+				print "404 error. It probably means that there exists no such symbol. "
+				return None
+			else:
+				print "Not 404 error. No idea why the request failed. "
+				return None
 
 		# create hiashi_normal_data from quotes
 		hiashi_normal_data_list = []
@@ -51,6 +63,15 @@ class RequestManager(object):
 		print tuple(self.hiashi_heikinashi_data_tuple_list)
 
 	def plot_hiashi_heikinashi_data(self):
+
+		"""
+		if hiashi_heikinashi_data_tuple_list is empty, 
+		that means the data was not successfully retrieved, 
+		so we don't plot anything.
+		"""
+		if not self.hiashi_heikinashi_data_tuple_list:
+			return None
+
 		mondays = WeekdayLocator(MONDAY)        # major ticks on the mondays
 		alldays = DayLocator()              # minor ticks on the days
 		weekFormatter = DateFormatter('%b %d')  # e.g., Jan 12

@@ -3,11 +3,15 @@ import datetime
 
 class Investor(object):
 
-	def __init__(self, name, genkinzandaka):
+	def __init__(self, name):
 		self.name = name
 		self.genkinzandaka = 10000.00
 		self.current_order_list = []
 		self.history_order_list = []
+		self.fund_manager = None
+
+	def hire_fund_manager(self, fund_manager):
+		self.fund_manager = fund_manager
 
 	def buy(self, stock, konyusu):
 		if stock.price * konyusu > self.genkinzandaka:
