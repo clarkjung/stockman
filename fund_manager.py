@@ -20,6 +20,7 @@ class FundManager(object):
 		self.symbols = []
 		self.set_stock_symbols()
 		self.hiashi_heikinashi_data_tuple_list = []
+		self.hiashi_heikinashi_data_list = []
 		self.from_date = None
 		self.to_date = None
 
@@ -57,7 +58,6 @@ class FundManager(object):
 
 		# create hiashi_normal_data from quotes
 		hiashi_normal_data_list = []
-		hiashi_heikinashi_data_list = []
 		for quote in quotes:
 			hiashi_normal_data = HiashiNormalData(quote[0], quote[1], quote[2], quote[3], quote[4])
 			hiashi_normal_data_list.append(hiashi_normal_data)
@@ -68,13 +68,13 @@ class FundManager(object):
 				continue
 			elif index == 1:
 				hiashi_heikinashi_data = HiashiHeikinashiData(hiashi_normal_data_list[index-1], hiashi_normal_data_list[index], True)
-				hiashi_heikinashi_data_list.append(hiashi_heikinashi_data)
+				self.hiashi_heikinashi_data_list.append(hiashi_heikinashi_data)
 			else:
-				hiashi_heikinashi_data = HiashiHeikinashiData(hiashi_heikinashi_data_list[index-2], hiashi_normal_data_list[index], False)
-				hiashi_heikinashi_data_list.append(hiashi_heikinashi_data)
+				hiashi_heikinashi_data = HiashiHeikinashiData(self.hiashi_heikinashi_data_list[index-2], hiashi_normal_data_list[index], False)
+				self.hiashi_heikinashi_data_list.append(hiashi_heikinashi_data)
 
 		# convert hiashi_heikinashi_data_list to hiashi_heikinashi_data_tuple_list for plotting
-		for hiashi_heikinashi_data in hiashi_heikinashi_data_list:
+		for hiashi_heikinashi_data in self.hiashi_heikinashi_data_list:
 			self.hiashi_heikinashi_data_tuple_list.append(tuple([hiashi_heikinashi_data.date, hiashi_heikinashi_data.open, hiashi_heikinashi_data.close, hiashi_heikinashi_data.high, hiashi_heikinashi_data.low]))
 
 		print tuple(self.hiashi_heikinashi_data_tuple_list)
@@ -110,33 +110,19 @@ class FundManager(object):
 
 		plt.show()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	
-
 	def run_analysis(self, symbol = None):
 		if symbol == None:
 			for symbol in self.symbols:
 				self.run_analysis(symbol)
 		else:
-			# do something
-			self.reset_hiashi_heikinashi_data_tuple_list()
+			self.retrieve_hiashi_normal_data(symbol)
+			# find all resistance lines
+			self.reset_variables()
 
-	def reset_hiashi_heikinashi_data_tuple_list()
+	def reset_variables(self):
 		self.hiashi_heikinashi_data_tuple_list = []
+		self.hiashi_heikinashi_data_list = []
+
+	def find_all_resistance_lines(self):
+		# do something here...
 
