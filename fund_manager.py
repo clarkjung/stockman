@@ -1,6 +1,8 @@
 import csv
 import pdb
 import urllib2
+from datetime import datetime
+from datetime import timedelta
 from hiashi_normal_data import HiashiNormalData
 import matplotlib.pyplot as plt
 from matplotlib.dates import DateFormatter, WeekdayLocator,\
@@ -11,10 +13,15 @@ from hiashi_heikinashi_data import HiashiHeikinashiData
 
 class FundManager(object):
 
+	# bunseki kikan = 120 days from today
+	bunseki_kikan = 120
+
 	def __init__(self):
 		self.symbols = []
 		self.set_stock_symbols()
 		self.hiashi_heikinashi_data_tuple_list = []
+		self.from_date = None
+		self.to_date = None
 
 	def set_stock_symbols(self):
 		f = open('data/nasdaq_list.csv', 'rb')
@@ -23,12 +30,22 @@ class FundManager(object):
 			self.symbols.append(row[0])
 		f.close()
 
-	# example date format = (2004, 4, 12)
-	def retrieve_hiashi_normal_data(self, symbol, from_date, to_date):
+	def set_dates(self):
+		current_date = datetime.now()
+		# need to check if to_date should be today or yesterday
+		self.to_date = (current_date.year, current_date.month, current_date.day)
+		past_date = current_date - timedelta(days=bunseki_kikan)
+		self.from_date = (past_date.year, past_date.month, past_date.day)
+
+	def retrieve_hiashi_normal_data(self, symbol):
+
+		if self.from_date == None or self.to_date == None:
+			print "from_date or to_date has not been set properly. "
+			return None
 
 		try:
 			# each quote tuple represents (date, open, close, high, low, volume)
-			quotes = quotes_historical_yahoo_ohlc(symbol, from_date, to_date)
+			quotes = quotes_historical_yahoo_ohlc(symbol, self.from_date, self.to_date)
 
 		except urllib2.HTTPError as err:
 			if err.code == 404:
@@ -117,7 +134,9 @@ class FundManager(object):
 			for symbol in self.symbols:
 				self.run_analysis(symbol)
 		else:
-			print symbol
+			# do something
+			self.reset_hiashi_heikinashi_data_tuple_list()
 
 	def reset_hiashi_heikinashi_data_tuple_list()
 		self.hiashi_heikinashi_data_tuple_list = []
+
