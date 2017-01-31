@@ -15,17 +15,20 @@ class FundManager(object):
 
 	# bunseki kikan = 120 days from today
 	bunseki_kikan = 120
+	resistance_haba = 5
 
 	def __init__(self):
 		self.symbols = []
 		self.set_stock_symbols()
 		self.hiashi_heikinashi_data_tuple_list = []
 		self.hiashi_heikinashi_data_list = []
+		self.hiashi_normal_data_list = []
+		self.resistance_line_list = []
 		self.from_date = None
 		self.to_date = None
 
 	def set_stock_symbols(self):
-		f = open('data/nasdaq_list.csv', 'rb')
+		f = open('data/nasdaq_list_sample.csv', 'rb')
 		reader = csv.reader(f)
 		for row in reader:
 			self.symbols.append(row[0])
@@ -35,7 +38,7 @@ class FundManager(object):
 		current_date = datetime.now()
 		# need to check if to_date should be today or yesterday
 		self.to_date = (current_date.year, current_date.month, current_date.day)
-		past_date = current_date - timedelta(days=bunseki_kikan)
+		past_date = current_date - timedelta(days=FundManager.bunseki_kikan)
 		self.from_date = (past_date.year, past_date.month, past_date.day)
 
 	def retrieve_hiashi_normal_data(self, symbol):
@@ -57,27 +60,26 @@ class FundManager(object):
 				return None
 
 		# create hiashi_normal_data from quotes
-		hiashi_normal_data_list = []
 		for quote in quotes:
 			hiashi_normal_data = HiashiNormalData(quote[0], quote[1], quote[2], quote[3], quote[4])
-			hiashi_normal_data_list.append(hiashi_normal_data)
+			self.hiashi_normal_data_list.append(hiashi_normal_data)
 
 		# convert hiashi_normal_data to hiashi_heikinashi_data
-		for index in range(len(hiashi_normal_data_list)):
+		for index in range(len(self.hiashi_normal_data_list)):
 			if index == 0:
 				continue
 			elif index == 1:
-				hiashi_heikinashi_data = HiashiHeikinashiData(hiashi_normal_data_list[index-1], hiashi_normal_data_list[index], True)
+				hiashi_heikinashi_data = HiashiHeikinashiData(self.hiashi_normal_data_list[index-1], self.hiashi_normal_data_list[index], True)
 				self.hiashi_heikinashi_data_list.append(hiashi_heikinashi_data)
 			else:
-				hiashi_heikinashi_data = HiashiHeikinashiData(self.hiashi_heikinashi_data_list[index-2], hiashi_normal_data_list[index], False)
+				hiashi_heikinashi_data = HiashiHeikinashiData(self.hiashi_heikinashi_data_list[index-2], self.hiashi_normal_data_list[index], False)
 				self.hiashi_heikinashi_data_list.append(hiashi_heikinashi_data)
 
 		# convert hiashi_heikinashi_data_list to hiashi_heikinashi_data_tuple_list for plotting
 		for hiashi_heikinashi_data in self.hiashi_heikinashi_data_list:
 			self.hiashi_heikinashi_data_tuple_list.append(tuple([hiashi_heikinashi_data.date, hiashi_heikinashi_data.open, hiashi_heikinashi_data.close, hiashi_heikinashi_data.high, hiashi_heikinashi_data.low]))
 
-		print tuple(self.hiashi_heikinashi_data_tuple_list)
+		# print tuple(self.hiashi_heikinashi_data_tuple_list)
 
 	def plot_hiashi_heikinashi_data(self):
 
@@ -116,13 +118,25 @@ class FundManager(object):
 				self.run_analysis(symbol)
 		else:
 			self.retrieve_hiashi_normal_data(symbol)
-			# find all resistance lines
+			self.find_all_resistance_lines()
+			# do something
+			print self.resistance_line_list
 			self.reset_variables()
 
 	def reset_variables(self):
 		self.hiashi_heikinashi_data_tuple_list = []
 		self.hiashi_heikinashi_data_list = []
+		self.hiashi_normal_data_list = []
+		self.resistance_line_list = []
 
 	def find_all_resistance_lines(self):
-		# do something here...
+		for index in range(len(self.hiashi_normal_data_list)):
+			if index == 0 or index == len(self.hiashi_normal_data_list)-1:
+				continue
+			previous_high = self.hiashi_normal_data_list[index-1].high
+			current_high = self.hiashi_normal_data_list[index].high
+			next_high = self.hiashi_normal_data_list[index+1].high
+			# print (current_high - previous_high, current_high - next_high)
+			if current_high > previous_high and current_high > next_high:
+				self.resistance_line_list.append(current_high)
 
