@@ -7,5 +7,3 @@ investor.hire_fund_manager(fund_manager)
 fund_manager.set_dates()
 fund_manager.run_analysis()
 
-
-

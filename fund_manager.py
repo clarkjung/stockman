@@ -7,6 +7,7 @@ from hiashi_normal_data import HiashiNormalData
 import matplotlib.pyplot as plt
 from matplotlib.dates import DateFormatter, WeekdayLocator,\
     DayLocator, MONDAY
+import matplotlib.dates as dt
 from matplotlib.finance import quotes_historical_yahoo_ohlc, candlestick_ohlc
 from hiashi_normal_data import HiashiNormalData
 from hiashi_heikinashi_data import HiashiHeikinashiData
@@ -22,6 +23,7 @@ class FundManager(object):
 		self.set_stock_symbols()
 		self.hiashi_heikinashi_data_tuple_list = []
 		self.hiashi_heikinashi_data_list = []
+		self.hiashi_normal_data_tuple_list = []
 		self.hiashi_normal_data_list = []
 		self.resistance_line_list = []
 		self.from_date = None
@@ -48,7 +50,7 @@ class FundManager(object):
 			return None
 
 		try:
-			# each quote tuple represents (date, open, close, high, low, volume)
+			# each quote tuple represents (date, open, high, low, close, volume)
 			quotes = quotes_historical_yahoo_ohlc(symbol, self.from_date, self.to_date)
 
 		except urllib2.HTTPError as err:
@@ -60,6 +62,7 @@ class FundManager(object):
 				return None
 
 		# create hiashi_normal_data from quotes
+		# date, open, high, low, close
 		for quote in quotes:
 			hiashi_normal_data = HiashiNormalData(quote[0], quote[1], quote[2], quote[3], quote[4])
 			self.hiashi_normal_data_list.append(hiashi_normal_data)
@@ -77,22 +80,26 @@ class FundManager(object):
 
 		# convert hiashi_heikinashi_data_list to hiashi_heikinashi_data_tuple_list for plotting
 		for hiashi_heikinashi_data in self.hiashi_heikinashi_data_list:
-			self.hiashi_heikinashi_data_tuple_list.append(tuple([hiashi_heikinashi_data.date, hiashi_heikinashi_data.open, hiashi_heikinashi_data.close, hiashi_heikinashi_data.high, hiashi_heikinashi_data.low]))
+			self.hiashi_heikinashi_data_tuple_list.append(tuple([hiashi_heikinashi_data.date, hiashi_heikinashi_data.open, hiashi_heikinashi_data.high, hiashi_heikinashi_data.low, hiashi_heikinashi_data.close]))
+
+		# convert hiashi_normal_data_list to hiashi_normal_data_tuple_list for plotting
+		for hiashi_normal_data in self.hiashi_normal_data_list:
+			self.hiashi_normal_data_tuple_list.append(tuple([hiashi_normal_data.date, hiashi_normal_data.open, hiashi_normal_data.high, hiashi_normal_data.low, hiashi_normal_data.close]))
 
 		# print tuple(self.hiashi_heikinashi_data_tuple_list)
 
-	def plot_hiashi_heikinashi_data(self):
+	def plot_data(self, which_data_tuple_list):
 
 		"""
 		if hiashi_heikinashi_data_tuple_list is empty, 
 		that means the data was not successfully retrieved, 
 		so we don't plot anything.
 		"""
-		if not self.hiashi_heikinashi_data_tuple_list:
+		if not which_data_tuple_list:
 			return None
 
 		mondays = WeekdayLocator(MONDAY)        # major ticks on the mondays
-		alldays = DayLocator()              # minor ticks on the days
+		alldays = WeekdayLocator()              # minor ticks on the days
 		weekFormatter = DateFormatter('%b %d')  # e.g., Jan 12
 		dayFormatter = DateFormatter('%d')      # e.g., 12
 
@@ -104,11 +111,15 @@ class FundManager(object):
 		#ax.xaxis.set_minor_formatter(dayFormatter)
 
 		#plot_day_summary(ax, quotes, ticksize=3)
-		candlestick_ohlc(ax, tuple(self.hiashi_heikinashi_data_tuple_list), width=0.6)
+		candlestick_ohlc(ax, tuple(which_data_tuple_list), width=0.6)
 
 		ax.xaxis_date()
 		ax.autoscale_view()
 		plt.setp(plt.gca().get_xticklabels(), rotation=45, horizontalalignment='right')
+
+		# display resistance lines
+		for resistance_line in self.resistance_line_list:
+			plt.axhline(y=resistance_line, color='r', linestyle='-')
 
 		plt.show()
 
@@ -121,15 +132,22 @@ class FundManager(object):
 			self.find_all_resistance_lines()
 			# do something
 			print self.resistance_line_list
+			self.plot_data(self.hiashi_normal_data_tuple_list)
 			self.reset_variables()
 
 	def reset_variables(self):
 		self.hiashi_heikinashi_data_tuple_list = []
 		self.hiashi_heikinashi_data_list = []
+		self.hiashi_normal_data_tuple_list = []
 		self.hiashi_normal_data_list = []
 		self.resistance_line_list = []
 
 	def find_all_resistance_lines(self):
+
+		# print all hiashi_normal_data_list
+		for hiashi_normal_data in self.hiashi_normal_data_list:
+			print("{}, {}, {}, {}, {}".format(dt.num2date(hiashi_normal_data.date), hiashi_normal_data.open, hiashi_normal_data.high, hiashi_normal_data.low, hiashi_normal_data.close))
+
 		for index in range(len(self.hiashi_normal_data_list)):
 			if index == 0 or index == len(self.hiashi_normal_data_list)-1:
 				continue
@@ -139,4 +157,6 @@ class FundManager(object):
 			# print (current_high - previous_high, current_high - next_high)
 			if current_high > previous_high and current_high > next_high:
 				self.resistance_line_list.append(current_high)
+				print("{}, {}, {}".format(previous_high, current_high, next_high))
+				print("{}: {}".format(dt.num2date(self.hiashi_normal_data_list[index].date), current_high))
 
