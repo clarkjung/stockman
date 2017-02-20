@@ -1,6 +1,7 @@
 import csv
 import pdb
 import urllib2
+import pdb
 from datetime import datetime
 from datetime import timedelta
 from hiashi_normal_data import HiashiNormalData
@@ -11,11 +12,13 @@ import matplotlib.dates as dt
 from matplotlib.finance import quotes_historical_yahoo_ohlc, candlestick_ohlc
 from hiashi_normal_data import HiashiNormalData
 from hiashi_heikinashi_data import HiashiHeikinashiData
+import numpy as np
+from sklearn.cluster import MeanShift, estimate_bandwidth
 
 class FundManager(object):
 
 	# bunseki kikan = 120 days from today
-	bunseki_kikan = 120
+	bunseki_kikan = 180
 	resistance_haba = 5
 
 	def __init__(self):
@@ -117,9 +120,13 @@ class FundManager(object):
 		ax.autoscale_view()
 		plt.setp(plt.gca().get_xticklabels(), rotation=45, horizontalalignment='right')
 
-		# display resistance lines
-		for resistance_line in self.resistance_line_list:
-			plt.axhline(y=resistance_line, color='r', linestyle='-')
+		# display all resistance lines
+		# for resistance_line in self.resistance_line_list:
+		# 	plt.axhline(y=resistance_line, color='r', linestyle='-')
+
+		clustered_resistance_lines = self.mean_shift(self.resistance_line_list)
+		for clustered_resistance_line in clustered_resistance_lines:
+			plt.axhline(y=clustered_resistance_line, color='y', linestyle='-')
 
 		plt.show()
 
@@ -131,7 +138,7 @@ class FundManager(object):
 			self.retrieve_hiashi_normal_data(symbol)
 			self.find_all_resistance_lines()
 			# do something
-			print self.resistance_line_list
+			#print self.resistance_line_list
 			self.plot_data(self.hiashi_normal_data_tuple_list)
 			self.reset_variables()
 
@@ -160,3 +167,58 @@ class FundManager(object):
 				print("{}, {}, {}".format(previous_high, current_high, next_high))
 				print("{}: {}".format(dt.num2date(self.hiashi_normal_data_list[index].date), current_high))
 
+	def mean_shift(self, resistance_lines):
+		clustered_resistance_lines = []
+		print "resistance_lines"
+		print resistance_lines
+		X = np.array(zip(resistance_lines,np.zeros(len(resistance_lines))), dtype=np.longdouble)
+		bandwidth = 0.0
+		quantile_value = 0.001
+		while True:
+			try:
+				bandwidth = estimate_bandwidth(X, quantile=quantile_value)
+				while (bandwidth == 0):
+					quantile_value = quantile_value + 0.001
+					bandwidth = estimate_bandwidth(X, quantile=quantile_value)
+				break
+			except ValueError:
+				quantile_value = quantile_value + 0.001
+
+		print("{}, {}".format(quantile_value, bandwidth))
+
+		ms = MeanShift(bandwidth=bandwidth, bin_seeding=True)
+		ms.fit(X)
+		labels = ms.labels_
+		cluster_centers = ms.cluster_centers_
+		labels_unique = np.unique(labels)
+		n_clusters_ = len(labels_unique)
+
+		print "X.toList()"
+		print X.tolist()
+		print len(X)
+
+		for k in range(n_clusters_):
+			# print len(X[k][0])
+			print X[k][0]
+			clustered_resistance_lines.append(X[k][0])
+
+		for k in range(n_clusters_):
+			my_members = labels == k
+			print "cluster {0}: {1}".format(k, X[my_members, 0])
+			print X[my_members, 0].tolist()
+			print len(X[my_members, 0].tolist())
+			cluster_resistance_value = 0
+			number_of_resistance_lines = 0
+			for resistance_value in X[my_members, 0].tolist():
+				cluster_resistance_value += resistance_value
+				number_of_resistance_lines += 1
+
+			if number_of_resistance_lines != 0:
+				cluster_resistance_value = cluster_resistance_value / number_of_resistance_lines
+				clustered_resistance_lines.append(cluster_resistance_value)
+
+
+		print "clustered_resistance_lines"
+		print clustered_resistance_lines
+
+		return clustered_resistance_lines
